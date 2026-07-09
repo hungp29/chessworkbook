@@ -1,0 +1,1 @@
+Đen chỉ có một nước đi để giữ quân tốt được bảo vệ, nhưng nước đi đó lại tạo ra stalemate ngay lập tức. Nếu Đen chọn bất kỳ nước đi nào khác, Trắng sẽ bắt được quân tốt. Vì vậy, kết quả cuối cùng trong mọi trường hợp đều là hòa.

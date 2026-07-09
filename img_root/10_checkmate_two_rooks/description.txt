@@ -1,0 +1,1 @@
+    Khi có hai xe hoặc xe và hậu, bạn có thể luân phiên kiểm soát các hàng và cột để dồn vua đối phương đến khi không còn ô thoát.

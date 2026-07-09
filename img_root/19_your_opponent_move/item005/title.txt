@@ -1,0 +1,1 @@
+    Trắng muốn thực hiện đòn nĩa bằng mã tại c7. Bạn sẽ bảo vệ ô đó như thế nào?

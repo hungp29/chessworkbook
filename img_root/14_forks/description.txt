@@ -1,0 +1,1 @@
+    Một cách để thắng quân là dùng một quân cờ tấn công đồng thời nhiều mục tiêu. Chiến thuật này được gọi là đòn nĩa (fork).

@@ -1,0 +1,1 @@
+    Thông thường, bạn nên bắt quân khi số quân tấn công của mình nhiều hơn số quân phòng thủ của đối phương. Khi đó bạn sẽ là người thực hiện nước bắt đầu tiên và cuối cùng trong chuỗi đổi quân.

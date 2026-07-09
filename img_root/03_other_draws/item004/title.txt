@@ -1,0 +1,1 @@
+    Trắng đang kém quân, nhưng có thể buộc ván cờ hòa bằng cách lặp lại vị trí thông qua một chuỗi nước chiếu mà Đen không thể thoát khỏi. Bạn nên thực hiện như thế nào?

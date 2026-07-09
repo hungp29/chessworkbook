@@ -1,0 +1,1 @@
+    Xiên quân xảy ra khi một quân tấn công một quân đối phương có giá trị cao hơn đứng phía trước, còn phía sau là một quân giá trị thấp hơn sẽ bị bắt sau khi quân phía trước phải di chuyển.

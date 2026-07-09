@@ -1,0 +1,1 @@
+    Vua và xe có thể chiếu hết một vua đơn độc. Phương pháp đơn giản và phổ biến nhất được gọi là “phương pháp chiếc hộp” (box method).

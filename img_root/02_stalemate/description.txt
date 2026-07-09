@@ -1,0 +1,1 @@
+Stalemate xảy ra khi người chơi đến lượt đi nhưng không có bất kỳ nước đi hợp lệ nào, trong khi vua của họ không bị chiếu. Stalemate được tính là hòa, ngay cả khi một bên có nhiều quân hơn hẳn trên bàn cờ.

@@ -1,0 +1,1 @@
+    Ghim quân xảy ra khi một quân bị tấn công nhưng không thể di chuyển vì sẽ làm lộ một quân có giá trị cao hơn. Ghim tuyệt đối là khi quân đó bị ghim vào vua.

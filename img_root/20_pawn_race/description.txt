@@ -1,0 +1,1 @@
+Trong các tàn cuộc chỉ còn vua và tốt, bạn cần tính xem mỗi bên mất bao nhiêu nước để phong cấp. Thông thường, người đưa được quân tốt phong cấp trước sẽ là người chiến thắng.

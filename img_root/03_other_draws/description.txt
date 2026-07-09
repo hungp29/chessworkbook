@@ -1,0 +1,1 @@
+    Một ván cờ có thể kết thúc hòa do stalemate, do hai bên đồng ý hòa, do cùng một vị trí lặp lại ba lần, hoặc do 50 nước liên tiếp không có nước đẩy tốt hay bắt quân.

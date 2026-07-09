@@ -1,0 +1,1 @@
+    Trắng có một quân mã ở a3 với vị trí không tốt, nhưng nó có thể đang bảo vệ một quân tốt quan trọng. Bạn có tìm ra lý do chính đáng để đổi tượng đang hoạt động tốt của mình lấy quân mã đó không?
