@@ -1,0 +1,38 @@
+- Discoveries
+- Win material by creating discovery tactics.
+
+- 790 Discoveries can create two attacks at once: attack the queen while revealing a check on the king.
+- 790 Black had to move the king, and now you can capture the queen!
+- 790 Black had to move the king, and now you can capture the queen!
+gộp ý 2, 3 lại
+
+- 790 Now the reverse: check the king while revealing an attack on the queen.
+- 790 Good choice! Now, can you capture the black queen?
+- œ3) Good choice! Now, can you capture the black queen?
+- œ3) Congratulations!
+gộp ý 2, 3, 4 lại
+
+- œ3) Which knight check wins the black queen?
+- œ3) Good start. What's next?
+- 78) Good start. What's next?
+- œ3) Well done! White wins the queen.
+gộp ý 2, 3, 4 lại
+
+- 78) Use a discovery to checkmate.
+- œ3) Great work!
+
+---
+
+Đòn đánh lộ (Discoveries)
+Thắng quân bằng cách sử dụng chiến thuật đánh lộ.
+
+Đòn đánh lộ có thể tạo ra hai mối đe dọa cùng lúc: tấn công hậu đối phương đồng thời mở ra một nước chiếu vua.
+Chính xác! Đen buộc phải di chuyển vua, và Trắng tận dụng cơ hội để bắt hậu Đen.
+
+Bây giờ hãy làm điều ngược lại: chiếu vua đồng thời mở ra đòn tấn công vào hậu đối phương.
+Rất tốt! Bạn đã thực hiện thành công đòn đánh lộ, giành được quân hậu và hoàn thành bài tập. Chúc mừng!
+
+Nước chiếu nào của mã sẽ giúp Trắng thắng được hậu Đen?
+Sau chuỗi đòn đánh lộ chính xác, Trắng đã thắng được quân hậu.
+
+Hãy sử dụng một đòn đánh lộ để chiếu hết.

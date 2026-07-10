@@ -1,5 +1,4 @@
-
 pillow
-matplotlib
-openpyxl
+matplotlib  # only needed for crop.py --select
+pytesseract
 reportlab

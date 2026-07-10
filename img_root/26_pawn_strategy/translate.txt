@@ -1,0 +1,17 @@
+- Pawn Strategy
+- 700 Pawns are best on adjacent files, rather than isolated or doubled.
+
+- Trade pieces to force your opponent to double pawns near their king. T ¥
+- Good start! How can you use your queen to check the newly exposed black king?
+- Good start! How can you use your queen to check the newly exposed black king?
+- Almost there. Where's the checkmate?
+- Almost there. Where's the checkmate?
+- Well played!
+gộp ý 2, 3, 4, 5, 6 lại
+
+---
+Chiến thuật quân tốt (Pawn Strategy)
+Quân tốt thường hoạt động hiệu quả nhất khi đứng trên các cột liền kề nhau, thay vì bị cô lập hoặc chồng tốt.
+
+Hãy đổi quân để buộc đối thủ tạo thành tốt chồng gần vua. Sau đó tận dụng những điểm yếu mới xuất hiện quanh vua Đen để mở cuộc tấn công và thực hiện đòn chiếu hết.
+Bạn đã khai thác thành công cấu trúc tốt yếu của đối phương và kết thúc ván cờ bằng một đòn chiếu hết đẹp mắt.

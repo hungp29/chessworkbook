@@ -1,197 +1,142 @@
-from pathlib import Path
-import sys, re, subprocess
+import argparse
+import re
 
-ROOT_DIR = Path("./img_root")
-ROOT_DIR.mkdir(exist_ok=True)
+from workbook_io import ROOT_DIR, find_chapter, sorted_chapters
 
-if len(sys.argv) < 4:
 
-    raise SystemExit(
-        "Usage: create_template.py chapter <order> <folder_name> <display_name> "
-        "OR item <chapter> <title> [note]"
-    )
-
-mode = sys.argv[1]
-
-if mode == "chapter":
-
-    # chapter <order> <folder_name> <display_name>
-
-    # chapter <folder_name> <display_name>
-
+def create_chapter(args: argparse.Namespace) -> None:
+    positional = args.rest
     description = ""
 
-    if len(sys.argv) >= 4:
-
+    if len(positional) >= 3:
         try:
-
-            order = int(sys.argv[2])
-
-            folder_name = sys.argv[3]
-
-            display_name = sys.argv[4]
-
-            if len(sys.argv) == 6:
-
-                description = sys.argv[5]
-
+            order = int(positional[0])
+            folder_name = positional[1]
+            display_name = positional[2]
+            if len(positional) >= 4:
+                description = positional[3]
         except ValueError:
-
-            folder_name = sys.argv[2]
-
-            display_name = sys.argv[3]
-
-            description = ""
-
-            if len(sys.argv) >= 5:
-
-                description = sys.argv[4]
-
+            folder_name = positional[0]
+            display_name = positional[1]
+            if len(positional) >= 3:
+                description = positional[2]
             existing_orders = []
-
-            for p in ROOT_DIR.iterdir():
-
-                if not p.is_dir():
-
+            for path in ROOT_DIR.iterdir():
+                if not path.is_dir():
                     continue
-
-                m = re.match(r"^(\d+)_", p.name)
-
-                if m:
-
-                    existing_orders.append(int(m.group(1)))
-
+                match = re.match(r"^(\d+)_", path.name)
+                if match:
+                    existing_orders.append(int(match.group(1)))
             order = max(existing_orders, default=0) + 1
-
+    elif len(positional) == 2:
+        folder_name = positional[0]
+        display_name = positional[1]
+        existing_orders = []
+        for path in ROOT_DIR.iterdir():
+            if not path.is_dir():
+                continue
+            match = re.match(r"^(\d+)_", path.name)
+            if match:
+                existing_orders.append(int(match.group(1)))
+        order = max(existing_orders, default=0) + 1
     else:
-
         raise SystemExit(
-            "Usage: chapter <order> <folder_name> <display_name> [description]\n"
-            "   or: chapter <folder_name> <display_name> [description]"
+            "Usage: template.py chapter <folder_name> <display_name> [description]\n"
+            "   or: template.py chapter <order> <folder_name> <display_name> [description]"
         )
 
+    if args.order is not None:
+        order = args.order
+
     chapter_dir = ROOT_DIR / f"{order:02d}_{folder_name}"
-
     if chapter_dir.exists():
-
-        raise Exception(f"Chapter already exists: {chapter_dir}")
+        raise SystemExit(f"Chapter already exists: {chapter_dir}")
 
     chapter_dir.mkdir(parents=True)
-
-    (chapter_dir / "group.txt").write_text(
-        display_name,
-        encoding="utf-8",
-    )
-
-    (chapter_dir / "description.txt").write_text(
-        description,
-        encoding="utf-8",
-    )
+    (chapter_dir / "group.txt").write_text(display_name, encoding="utf-8")
+    (chapter_dir / "description.txt").write_text(description, encoding="utf-8")
 
     print()
-
     print(f"Created chapter: {display_name}")
-
     print(f"Order: {order}")
-
     print(f"Folder: {chapter_dir}")
-
     print()
 
-elif mode == "item":
 
-    if len(sys.argv) < 3:
-
-        raise SystemExit("Usage: template.py item [chapter] <title> [note]")
-
-    chapters = sorted(
-        [p for p in ROOT_DIR.iterdir() if p.is_dir()],
-        key=lambda p: p.name,
-    )
-
+def create_item(args: argparse.Namespace) -> None:
+    chapters = sorted_chapters()
     if not chapters:
+        raise SystemExit(f"No chapters found in {ROOT_DIR}")
 
-        raise Exception("No chapters found")
-
-    # item <chapter> <title> [note]
-
-    # item <title> [note]
-
-    if len(sys.argv) >= 4:
-
-        chapter_name = sys.argv[2]
-
-        matches = [
-            p
-            for p in ROOT_DIR.iterdir()
-            if p.is_dir() and p.name.endswith(f"_{chapter_name}")
-        ]
-
-        if matches:
-
-            if len(matches) > 1:
-
-                raise Exception(f"Multiple chapters match: {chapter_name}")
-
-            chapter = matches[0]
-
-            title = sys.argv[3]
-
-            notes = sys.argv[4:]
-
+    positional = args.rest
+    if len(positional) >= 2:
+        chapter = find_chapter(positional[0])
+        if chapter is not None:
+            title = positional[1]
+            note = "\n".join(positional[2:]) if len(positional) > 2 else (args.note or "")
         else:
-
             chapter = chapters[-1]
-
-            title = sys.argv[2]
-
-            notes = sys.argv[3:]
-
+            title = positional[0]
+            note = "\n".join(positional[1:]) if len(positional) > 1 else (args.note or "")
     else:
-
         chapter = chapters[-1]
-
-        title = sys.argv[2]
-
-        notes = []
+        title = positional[0]
+        note = args.note or ""
 
     nums = []
-
-    for p in chapter.glob("item*"):
-
-        m = re.match(r"item(\d+)$", p.name)
-
-        if m:
-
-            nums.append(int(m.group(1)))
+    for path in chapter.glob("item*"):
+        match = re.match(r"item(\d+)$", path.name)
+        if match:
+            nums.append(int(match.group(1)))
 
     next_no = max(nums, default=0) + 1
-
     item = chapter / f"item{next_no:03d}"
-
     (item / "raw").mkdir(parents=True)
-
     (item / "cropped").mkdir()
-
     (item / "title.txt").write_text(title, encoding="utf-8")
-
-    (item / "note.txt").write_text(
-        "\n".join(notes),
-        encoding="utf-8",
-    )
+    (item / "note.txt").write_text(note, encoding="utf-8")
 
     print()
-
     print(f"Created item: {item.name}")
-
     print(f"Chapter: {chapter.name}")
-
     print()
 
-    # try:
 
-    #     subprocess.run(["open", str(item / "raw")])
+def main() -> None:
+    ROOT_DIR.mkdir(exist_ok=True)
 
-    # except Exception:
+    parser = argparse.ArgumentParser(description="Create chapter or item folders")
+    subparsers = parser.add_subparsers(dest="mode", required=True)
 
-    #     pass
+    chapter_parser = subparsers.add_parser("chapter", help="Create a new chapter")
+    chapter_parser.add_argument(
+        "rest",
+        nargs="+",
+        help='[order] folder_name display_name [description]',
+    )
+    chapter_parser.add_argument(
+        "--order",
+        type=int,
+        help="Override chapter order number",
+    )
+    chapter_parser.set_defaults(func=create_chapter)
+
+    item_parser = subparsers.add_parser("item", help="Create a new item")
+    item_parser.add_argument(
+        "rest",
+        nargs="+",
+        help='[chapter] title [note...] — e.g. stalemate "My title" hint here',
+    )
+    item_parser.add_argument(
+        "--note",
+        default="",
+        help="Optional item note (used when no extra positional notes)",
+    )
+    item_parser.set_defaults(func=create_item)
+
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,1 @@
+Tượng mạnh nhất khi có thể kiểm soát nhiều ô. Hãy triển khai tượng ô trắng của bạn.

@@ -1,0 +1,32 @@
+- Trapped Pieces
+- Learn to take advantage of trapped pieces.
+
+- Their queen is running out of places to go.
+- Yes, you trapped the queen! Can you recapture?
+- Yes, you trapped the queen! Can you recapture?
+- 9 woh ain Congratulation!
+gộp ý 2, 3, 4 lại
+
+- Yes, the bishop was trapped, can you recapture?
+- Yes, the bishop was trapped, can you recapture?
+- Great, you trapped and captured a bishop.
+gộp ý 2, 3 lại
+
+- No hints this time.
+- Yes! Now you can recapture.
+- 790 Yes! Now you can recapture.
+- 790 Congratulations on learning about trapped pieces!
+gộp ý 2, 3, 4 lại
+
+---
+Quân bị mắc kẹt (Trapped Pieces)
+Học cách tận dụng những quân cờ bị mắc kẹt của đối phương.
+
+Hậu đối phương đang dần hết ô để di chuyển.
+Chính xác! Bạn đã bẫy được hậu đối phương và bắt được quân này. Chúc mừng bạn đã thực hiện thành công chiến thuật bẫy quân!
+
+Quân tượng đã bị mắc kẹt, bạn có cách nào bắt quân đó không?
+Rất tốt! Bạn đã bẫy và bắt được quân tượng.
+
+Lần này sẽ không có gợi ý.
+Chính xác! Bạn đã tìm ra cách bắt lại quân và hoàn thành bài học về chiến thuật bẫy quân. Chúc mừng!
