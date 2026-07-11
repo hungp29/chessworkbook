@@ -4,7 +4,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pytesseract
-from PIL import Image, ImageDraw, ImageEnhance, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFont, ImageOps
 from pytesseract.pytesseract import TesseractNotFoundError
 
 from ocr_utils import configure_tesseract
@@ -32,6 +32,33 @@ def warn_missing_tesseract() -> None:
         "  Or override: crop.py --white-bottom  /  crop.py --black-bottom"
     )
 
+# def add_board_border(
+#     img,
+#     border_size=6,
+#     border_color=(220, 220, 220),
+# ):
+#     return ImageOps.expand(
+#         img,
+#         border=border_size,
+#         fill=border_color,
+#     )
+def add_board_border(img):
+    outer = 10
+    inner = 1
+
+    img = ImageOps.expand(
+        img,
+        border=outer,
+        fill=(245, 245, 245),
+    )
+
+    img = ImageOps.expand(
+        img,
+        border=inner,
+        fill=(200, 200, 200),
+    )
+
+    return img, outer + inner
 
 def detect_board_orientation(img, *, force_flipped: bool | None = None):
     if force_flipped is not None:
@@ -227,20 +254,21 @@ def is_highlight_color(r, g, b) -> bool:
     )
 
 
-def find_highlighted_squares(img) -> list[tuple[int, int, int, int]]:
+def find_highlighted_squares(img, board_offset=0) -> list[tuple[int, int, int, int]]:
     """Return board squares that contain enough highlight pixels."""
     img = img.convert("RGB")
     pixels = img.load()
     w, h = img.size
-    square = w / 8
+    board_size = w - board_offset * 2
+    square = board_size / 8
     squares = []
 
     for row in range(8):
         for col in range(8):
-            x1 = int(col * square)
-            y1 = int(row * square)
-            x2 = int(x1 + square)
-            y2 = int(y1 + square)
+            x1 = int(board_offset + col * square)
+            y1 = int(board_offset + row * square)
+            x2 = int(board_offset + (col + 1) * square)
+            y2 = int(board_offset + (row + 1) * square)
 
             pad_x = max(2, int((x2 - x1) * HIGHLIGHT_INNER_PAD_RATIO))
             pad_y = max(2, int((y2 - y1) * HIGHLIGHT_INNER_PAD_RATIO))
@@ -266,11 +294,12 @@ def find_highlighted_squares(img) -> list[tuple[int, int, int, int]]:
     return squares
 
 
-def add_highlight_border(img):
+def add_highlight_border(img, board_offset=0):
     img = img.convert("RGB")
-    squares = find_highlighted_squares(img)
+    squares = find_highlighted_squares(img, board_offset)
     draw = ImageDraw.Draw(img)
-    square = img.size[0] / 8
+    board_size = img.size[0] - board_offset * 2
+    square = board_size / 8
     corner_len = int(square * 0.18)
 
     print("highlighted squares =", len(squares))
@@ -367,7 +396,8 @@ def process_items(
                 print(file.name, "BLACK_BOTTOM" if flipped else "WHITE_BOTTOM")
                 cropped = lighten_board_green(cropped)
                 cropped = redraw_coordinates(cropped, flipped=flipped)
-                cropped = add_highlight_border(cropped)
+                cropped, board_offset = add_board_border(cropped)
+                cropped = add_highlight_border(cropped, board_offset)
                 cropped.save(cropped_dir / f"{idx:03d}.png")
 
         print(f"  Processed {len(files)} images")
