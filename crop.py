@@ -203,73 +203,78 @@ def lighten_board_green(img):
     return img
 
 
+HIGHLIGHT_TARGETS = (
+    (247, 246, 130),
+    (186, 201, 69),
+    (210, 106, 82),
+    (228, 166, 14),
+    (251, 183, 42),
+    (237, 124, 106),
+    (253, 185, 26)
+)
+HIGHLIGHT_TOLERANCE = 10
+HIGHLIGHT_MIN_RATIO = 0.08
+HIGHLIGHT_MIN_PIXELS = 20
+HIGHLIGHT_INNER_PAD_RATIO = 0.15
+
+
+def is_highlight_color(r, g, b) -> bool:
+    return any(
+        abs(r - tr) <= HIGHLIGHT_TOLERANCE
+        and abs(g - tg) <= HIGHLIGHT_TOLERANCE
+        and abs(b - tb) <= HIGHLIGHT_TOLERANCE
+        for tr, tg, tb in HIGHLIGHT_TARGETS
+    )
+
+
+def find_highlighted_squares(img) -> list[tuple[int, int, int, int]]:
+    """Return board squares that contain enough highlight pixels."""
+    img = img.convert("RGB")
+    pixels = img.load()
+    w, h = img.size
+    square = w / 8
+    squares = []
+
+    for row in range(8):
+        for col in range(8):
+            x1 = int(col * square)
+            y1 = int(row * square)
+            x2 = int(x1 + square)
+            y2 = int(y1 + square)
+
+            pad_x = max(2, int((x2 - x1) * HIGHLIGHT_INNER_PAD_RATIO))
+            pad_y = max(2, int((y2 - y1) * HIGHLIGHT_INNER_PAD_RATIO))
+            inner_x1 = x1 + pad_x
+            inner_y1 = y1 + pad_y
+            inner_x2 = x2 - pad_x
+            inner_y2 = y2 - pad_y
+            if inner_x2 <= inner_x1 or inner_y2 <= inner_y1:
+                continue
+
+            total = 0
+            count = 0
+            for y in range(inner_y1, inner_y2):
+                for x in range(inner_x1, inner_x2):
+                    total += 1
+                    if is_highlight_color(*pixels[x, y]):
+                        count += 1
+
+            threshold = max(HIGHLIGHT_MIN_PIXELS, int(total * HIGHLIGHT_MIN_RATIO))
+            if count >= threshold:
+                squares.append((x1, y1, x2, y2))
+
+    return squares
+
+
 def add_highlight_border(img):
     img = img.convert("RGB")
-    TARGETS = [(247, 246, 130), (186, 201, 69), (210, 106, 82), (228, 166, 14), (251, 183, 42), (237, 124, 106),]
-    TOLERANCE = 10
-
-    def is_highlight_color(r, g, b):
-        return any(
-            abs(r - tr) <= TOLERANCE
-            and abs(g - tg) <= TOLERANCE
-            and abs(b - tb) <= TOLERANCE
-            for tr, tg, tb in TARGETS
-        )
-
-    w, h = img.size
-    pixels = img.load()
-    visited = set()
-    boxes = []
-
-    for y in range(h):
-        for x in range(w):
-            if (x, y) in visited:
-                continue
-
-            r, g, b = pixels[x, y]
-            if not is_highlight_color(r, g, b):
-                continue
-
-            stack = [(x, y)]
-            visited.add((x, y))
-            min_x = max_x = x
-            min_y = max_y = y
-
-            while stack:
-                cx, cy = stack.pop()
-                min_x = min(min_x, cx)
-                max_x = max(max_x, cx)
-                min_y = min(min_y, cy)
-                max_y = max(max_y, cy)
-
-                for nx, ny in ((cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)):
-                    if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in visited:
-                        nr, ng, nb = pixels[nx, ny]
-                        if is_highlight_color(nr, ng, nb):
-                            visited.add((nx, ny))
-                            stack.append((nx, ny))
-
-            boxes.append((min_x, min_y, max_x, max_y))
-
+    squares = find_highlighted_squares(img)
     draw = ImageDraw.Draw(img)
-    square = w / 8
+    square = img.size[0] / 8
+    corner_len = int(square * 0.18)
 
-    print("boxes =", len(boxes))
-    for box in boxes:
-        if (box[2] - box[0]) < 10 or (box[3] - box[1]) < 10:
-            continue
-
-        center_x = (box[0] + box[2]) / 2
-        center_y = (box[1] + box[3]) / 2
-        col = int(center_x // square)
-        row = int(center_y // square)
-        x1 = int(col * square)
-        y1 = int(row * square)
-        x2 = int(x1 + square)
-        y2 = int(y1 + square)
-        snapped_box = (x1, y1, x2, y2)
-        corner_len = int(square * 0.18)
-
+    print("highlighted squares =", len(squares))
+    for snapped_box in squares:
         draw_corner_box(
             draw,
             snapped_box,

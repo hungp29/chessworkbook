@@ -10,7 +10,6 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
     BaseDocTemplate,
-    Flowable,
     Frame,
     Image,
     PageBreak,
@@ -42,6 +41,10 @@ BOTTOM_MARGIN = 30
 IMAGE_SIZE = 160
 IMAGE_GAP = 10
 
+CONTENT_PDF = OUT_DIR / "Chess Workbook - Content.pdf"
+TOC_PDF = OUT_DIR / "Chess Workbook - TOC.pdf"
+COMBINED_PDF = OUT_DIR / "Chess Workbook.pdf"
+
 
 def register_fonts() -> None:
     for name, filename in (
@@ -57,21 +60,17 @@ def para(text: str, style) -> Paragraph:
     return Paragraph(escape(text).replace("\n", "<br/>"), style)
 
 
-class EndOfTOC(Flowable):
-    def wrap(self, availWidth, availHeight):
-        return (0, 0)
-
-    def draw(self):
-        pass
-
-
 class ChessWorkbookDoc(BaseDocTemplate):
-    toc_last_page = None
-    content_start_page = 1
-    current_chapter = ""
+    """mode: 'combined' (TOC + content), 'content', or 'toc'."""
 
-    def __init__(self, filename, *, use_mirror_margin: bool = True):
-        self.use_mirror_margin = use_mirror_margin
+    def __init__(self, filename, *, mirror_margin: bool = True, mode: str = "combined"):
+        self.mode = mode
+        self.mirror_margin = mirror_margin
+        self.current_chapter = ""
+        self.chapter_start_pages: set[int] = set()
+        self.page_chapters: dict[int, str] = {}
+        self.chapter_page_numbers: list[int] = []
+        self.content_start_page: int | None = None
 
         super().__init__(
             filename,
@@ -81,91 +80,85 @@ class ChessWorkbookDoc(BaseDocTemplate):
             bottomMargin=BOTTOM_MARGIN,
         )
 
-        self.chapter_start_pages = set()
-        self.page_chapters = {}
-
         content_width = PAGE_WIDTH - INNER_MARGIN - OUTER_MARGIN
         content_height = PAGE_HEIGHT - TOP_MARGIN - BOTTOM_MARGIN
 
-        if use_mirror_margin:
-            toc_odd_x = INNER_MARGIN
-            toc_even_x = OUTER_MARGIN
-            content_odd_x = INNER_MARGIN
-            content_even_x = OUTER_MARGIN
+        if mirror_margin:
+            odd_x = INNER_MARGIN
+            even_x = OUTER_MARGIN
         else:
-            centered_x = (INNER_MARGIN + OUTER_MARGIN) / 2
-            toc_odd_x = toc_even_x = content_odd_x = content_even_x = centered_x
+            odd_x = even_x = (INNER_MARGIN + OUTER_MARGIN) / 2
 
-        toc_odd_frame = Frame(
-            toc_odd_x, BOTTOM_MARGIN, content_width, content_height, id="toc_odd"
+        odd_frame = Frame(
+            odd_x, BOTTOM_MARGIN, content_width, content_height, id="odd"
         )
-        toc_even_frame = Frame(
-            toc_even_x, BOTTOM_MARGIN, content_width, content_height, id="toc_even"
-        )
-        content_odd_frame = Frame(
-            content_odd_x, BOTTOM_MARGIN, content_width, content_height, id="content_odd"
-        )
-        content_even_frame = Frame(
-            content_even_x,
-            BOTTOM_MARGIN,
-            content_width,
-            content_height,
-            id="content_even",
+        even_frame = Frame(
+            even_x, BOTTOM_MARGIN, content_width, content_height, id="even"
         )
 
         self.addPageTemplates(
             [
                 PageTemplate(
-                    id="toc_odd",
-                    frames=[toc_odd_frame],
-                    onPage=self.draw_header_footer,
-                    autoNextPageTemplate="toc_even",
+                    id="odd",
+                    frames=[odd_frame],
+                    onPageEnd=self.draw_header_footer,
+                    autoNextPageTemplate="even",
                 ),
                 PageTemplate(
-                    id="toc_even",
-                    frames=[toc_even_frame],
-                    onPage=self.draw_header_footer,
-                    autoNextPageTemplate="toc_odd",
-                ),
-                PageTemplate(
-                    id="content_odd",
-                    frames=[content_odd_frame],
-                    onPage=self.draw_header_footer,
-                    autoNextPageTemplate="content_even",
-                ),
-                PageTemplate(
-                    id="content_even",
-                    frames=[content_even_frame],
-                    onPage=self.draw_header_footer,
-                    autoNextPageTemplate="content_odd",
+                    id="even",
+                    frames=[even_frame],
+                    onPageEnd=self.draw_header_footer,
+                    autoNextPageTemplate="odd",
                 ),
             ]
         )
 
+    def beforeDocument(self):
+        self.chapter_start_pages = set()
+        self.page_chapters = {}
+        self.chapter_page_numbers = []
+        self.current_chapter = ""
+        self.content_start_page = None
+
+    def show_page_number(self, page: int) -> bool:
+        if self.mode == "toc":
+            return False
+        if self.mode == "content":
+            return True
+        return self.content_start_page is not None and page >= self.content_start_page
+
     def chapter_for_page(self, page: int) -> str | None:
-        if not self.chapter_start_pages:
+        if not self.page_chapters:
             return None
-        eligible = [p for p in self.chapter_start_pages if p <= page]
+        eligible = [p for p in self.page_chapters if p <= page]
         if not eligible:
             return None
         return self.page_chapters.get(max(eligible))
+
+    def current_chapter_header(self) -> str:
+        text = self.current_chapter
+        return text.split(". ", 1)[1] if ". " in text else text
 
     def draw_header_footer(self, canvas, doc):
         canvas.saveState()
         canvas.setFont("NotoSans", 9)
 
         page = canvas.getPageNumber()
-        display_page = page - self.content_start_page + 1
-        chapter_name = self.chapter_for_page(page)
+        chapter_name = self.chapter_for_page(page) if self.mode != "toc" else None
 
         logging.debug(
-            "HEADER page=%s chapter=%s start=%s",
+            "HEADER page=%s chapter=%s suppress=%s mode=%s",
             page,
             chapter_name,
             page in self.chapter_start_pages,
+            self.mode,
         )
 
-        if display_page >= 1 and chapter_name and page not in self.chapter_start_pages:
+        if (
+            self.mode != "toc"
+            and chapter_name
+            and page not in self.chapter_start_pages
+        ):
             canvas.drawCentredString(
                 PAGE_WIDTH / 2,
                 PAGE_HEIGHT - 20,
@@ -174,33 +167,18 @@ class ChessWorkbookDoc(BaseDocTemplate):
 
         canvas.drawString(PAGE_WIDTH / 2 - 40, 20, "Mỡ Mỡ Chess Workbook")
 
-        if display_page >= 1:
-            if not self.use_mirror_margin:
-                canvas.drawRightString(
-                    PAGE_WIDTH - OUTER_MARGIN, 20, str(display_page)
-                )
+        if self.show_page_number(page):
+            if not self.mirror_margin:
+                canvas.drawRightString(PAGE_WIDTH - OUTER_MARGIN, 20, str(page))
             elif page % 2 == 1:
-                canvas.drawRightString(
-                    PAGE_WIDTH - OUTER_MARGIN, 20, str(display_page)
-                )
+                canvas.drawRightString(PAGE_WIDTH - OUTER_MARGIN, 20, str(page))
             else:
-                canvas.drawString(OUTER_MARGIN, 20, str(display_page))
+                canvas.drawString(OUTER_MARGIN, 20, str(page))
 
         canvas.restoreState()
 
-    def beforePage(self):
-        if self.toc_last_page is not None and self.page > self.toc_last_page:
-            if self.page % 2 == 0:
-                self.handle_nextPageTemplate("content_odd")
-            else:
-                self.handle_nextPageTemplate("content_even")
-
     def afterFlowable(self, flowable):
-        if isinstance(flowable, EndOfTOC):
-            self.toc_last_page = self.page
-            return
-
-        if not isinstance(flowable, Paragraph):
+        if self.mode == "toc" or not isinstance(flowable, Paragraph):
             return
 
         style_name = flowable.style.name
@@ -212,24 +190,32 @@ class ChessWorkbookDoc(BaseDocTemplate):
             text[:80],
         )
 
+        if style_name == "Item":
+            self.chapter_start_pages.add(self.page)
+            if self.current_chapter:
+                self.page_chapters[self.page] = self.current_chapter_header()
+            return
+
         if style_name != "Chapter":
             return
 
         self.current_chapter = text
         logging.debug("CHAPTER page=%s text=%s", self.page, text)
 
-        header_text = text.split(". ", 1)[1] if ". " in text else text
+        if self.mode == "combined" and self.content_start_page is None:
+            self.content_start_page = self.page
+
+        header_text = self.current_chapter_header()
         self.chapter_start_pages.add(self.page)
         self.page_chapters[self.page] = header_text
+        self.chapter_page_numbers.append(self.page)
+
+        if self.mode != "combined":
+            return
 
         key = "chapter_" + str(self.page) + "_" + text.replace(" ", "_")
         self.canv.bookmarkPage(key)
-
-        display_page = self.page - self.content_start_page + 1
-        if display_page < 1:
-            display_page = 1
-
-        self.notify("TOCEntry", (0, text, display_page, key))
+        self.notify("TOCEntry", (0, text, self.page, key))
 
 
 def create_styles():
@@ -306,20 +292,8 @@ def create_styles():
     }
 
 
-def build_story(styles, *, insert_blank_after_toc: bool = False):
-    from reportlab.platypus import NextPageTemplate
-
-    story = [para("Mục lục", styles["toc_title"]), Spacer(1, 20)]
-
-    toc = TableOfContents()
-    toc.levelStyles = [styles["toc"]]
-    story.extend([toc, EndOfTOC()])
-
-    if insert_blank_after_toc:
-        story.extend([PageBreak(), NextPageTemplate("content_odd"), PageBreak()])
-    else:
-        story.append(NextPageTemplate("content_odd"))
-
+def build_chapters_story(styles) -> list:
+    story = []
     chapters = sorted_chapters()
     if not chapters:
         logging.warning("No chapters found in %s", ROOT_DIR)
@@ -419,62 +393,69 @@ def build_story(styles, *, insert_blank_after_toc: bool = False):
     return story
 
 
-def probe_toc_last_page(styles, *, use_mirror_margin: bool) -> int:
-    """Build TOC only to learn how many pages it occupies."""
-    chapters = sorted_chapters()
-    probe_pdf = OUT_DIR / "_toc_probe.pdf"
-
-    doc = ChessWorkbookDoc(str(probe_pdf), use_mirror_margin=use_mirror_margin)
-
+def build_combined_story(styles) -> list:
     toc = TableOfContents()
     toc.levelStyles = [styles["toc"]]
-    for index, chapter in enumerate(chapters, start=1):
+    return [
+        para("Mục lục", styles["toc_title"]),
+        Spacer(1, 20),
+        toc,
+        PageBreak(),
+        *build_chapters_story(styles),
+    ]
+
+
+def build_toc_story(styles, chapter_page_numbers: list[int]) -> tuple[list, TableOfContents]:
+    toc = TableOfContents()
+    toc.levelStyles = [styles["toc"]]
+    chapters = sorted_chapters()
+
+    for index, (chapter, page_number) in enumerate(
+        zip(chapters, chapter_page_numbers, strict=False),
+        start=1,
+    ):
         toc.addEntry(
             0,
             f"{index}. {chapter_display_name(chapter)}",
-            1,
-            f"probe_{index}",
+            page_number,
         )
 
     story = [
         para("Mục lục", styles["toc_title"]),
         Spacer(1, 20),
         toc,
-        EndOfTOC(),
     ]
-    doc.multiBuild(story)
-
-    toc_last_page = doc.toc_last_page
-    if probe_pdf.exists():
-        probe_pdf.unlink()
-
-    if toc_last_page is None:
-        raise RuntimeError("Could not determine TOC length")
-
-    logging.debug("toc_last_page=%s (probe)", toc_last_page)
-    return toc_last_page
+    return story, toc
 
 
-def build_pdf(*, use_mirror_margin: bool = True) -> Path:
+def build_combined_pdf() -> Path:
     OUT_DIR.mkdir(exist_ok=True)
     styles = create_styles()
 
-    toc_last_page = probe_toc_last_page(styles, use_mirror_margin=use_mirror_margin)
-    insert_blank = toc_last_page % 2 == 1
-    content_start_page = toc_last_page + 1 + (1 if insert_blank else 0)
+    doc = ChessWorkbookDoc(str(COMBINED_PDF), mirror_margin=False, mode="combined")
+    doc.multiBuild(build_combined_story(styles))
+    return COMBINED_PDF
 
-    logging.debug(
-        "insert_blank=%s content_start_page=%s",
-        insert_blank,
-        content_start_page,
-    )
 
-    final_pdf = OUT_DIR / "Chess Workbook.pdf"
-    doc = ChessWorkbookDoc(str(final_pdf), use_mirror_margin=use_mirror_margin)
-    doc.content_start_page = content_start_page
-    doc.multiBuild(build_story(styles, insert_blank_after_toc=insert_blank))
+def build_split_pdfs() -> tuple[Path, Path]:
+    OUT_DIR.mkdir(exist_ok=True)
+    styles = create_styles()
 
-    return final_pdf
+    content_doc = ChessWorkbookDoc(str(CONTENT_PDF), mirror_margin=True, mode="content")
+    content_doc.build(build_chapters_story(styles))
+    chapter_pages = content_doc.chapter_page_numbers
+
+    if len(chapter_pages) != len(sorted_chapters()):
+        raise RuntimeError(
+            f"Expected {len(sorted_chapters())} chapter pages, got {len(chapter_pages)}"
+        )
+
+    toc_doc = ChessWorkbookDoc(str(TOC_PDF), mirror_margin=True, mode="toc")
+    toc_story, toc = build_toc_story(styles, chapter_pages)
+    toc._lastEntries = list(toc._entries)
+    toc_doc.build(toc_story)
+
+    return CONTENT_PDF, TOC_PDF
 
 
 def main() -> None:
@@ -482,7 +463,7 @@ def main() -> None:
     parser.add_argument(
         "--single-margin",
         action="store_true",
-        help="Use centered margins instead of mirror margins",
+        help="Build one PDF (TOC + content) with centered margins",
     )
     parser.add_argument(
         "--verbose",
@@ -500,8 +481,14 @@ def main() -> None:
         raise SystemExit(f"Chapter directory not found: {ROOT_DIR}")
 
     register_fonts()
-    final_pdf = build_pdf(use_mirror_margin=not args.single_margin)
-    print(f"Created: {final_pdf}")
+
+    if args.single_margin:
+        combined_pdf = build_combined_pdf()
+        print(f"Created: {combined_pdf}")
+    else:
+        content_pdf, toc_pdf = build_split_pdfs()
+        print(f"Created: {content_pdf}")
+        print(f"Created: {toc_pdf}")
 
 
 if __name__ == "__main__":
