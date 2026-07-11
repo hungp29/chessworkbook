@@ -234,7 +234,7 @@ def create_styles():
         fontName="NotoSans-Italic",
         fontSize=9,
         leading=12,
-        textColor="#555555",
+        textColor="#333333",
         spaceBefore=2,
         spaceAfter=8,
     )
@@ -251,7 +251,7 @@ def create_styles():
         parent=styles["BodyText"],
         fontName="NotoSans-Italic",
         fontSize=9,
-        textColor="#555555",
+        textColor="#333333",
         leading=14,
         spaceBefore=0,
         spaceAfter=0,
